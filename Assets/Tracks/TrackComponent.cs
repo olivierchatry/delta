@@ -31,6 +31,12 @@ public class TrackComponent : SplineComponent {
     void OnValidate()
     {
         if (uniformIndex != null) uniformIndex.ReIndex();
+        StartCoroutine(GenerateCoRoutine());
+    }
+
+    public IEnumerator GenerateCoRoutine()
+    {
+        yield return new WaitForEndOfFrame();
         Generate();
     }
 

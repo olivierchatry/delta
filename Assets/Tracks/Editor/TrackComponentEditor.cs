@@ -31,7 +31,7 @@ public class TrackComponentEditor : Editor
         if (mouseIsOutside) return;
 
         var points = serializedObject.FindProperty("points");
-        if (Event.current.shift)
+        if (Event.current.control)
         {
             ShowClosestPointOnClosedSpline(points);
         }
@@ -139,7 +139,7 @@ public class TrackComponentEditor : Editor
             Handles.DrawLine(hit, spline.transform.TransformPoint(sp));
 
 
-            if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.shift)
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.control)
             {
                 var i = (Mathf.FloorToInt(p * spline.points.Count) + 2) % spline.points.Count;
                 points.InsertArrayElementAtIndex(i);
@@ -158,7 +158,7 @@ public class TrackComponentEditor : Editor
         var closestI = A;
         for (var i = 0; i <= steps; i++)
         {
-            var p = spline.GetNonUniformPoint(i * step);
+            var p = spline.transform.TransformPoint(spline.GetNonUniformPoint(i * step));
             var gp = HandleUtility.WorldToGUIPoint(p);
             var delta = (screenPoint - gp).sqrMagnitude;
             if (delta < smallestDelta)
