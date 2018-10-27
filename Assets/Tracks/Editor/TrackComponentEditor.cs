@@ -12,8 +12,7 @@ public class TrackComponentEditor : Editor
     void ResetIndex()
     {
         var spline = target as TrackComponent;
-        spline.ResetIndex();
-        spline.Generate();
+        spline.ResetIndex();        
     }
 
     void OnSceneGUI()
