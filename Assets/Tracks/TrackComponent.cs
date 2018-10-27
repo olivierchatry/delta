@@ -35,9 +35,9 @@ public class TrackComponent : SplineComponent {
     }
 
     public IEnumerator GenerateCoRoutine()
-    {
-        yield return new WaitForEndOfFrame();
+    {        
         Generate();
+        yield return null;
     }
 
     public void Generate()
