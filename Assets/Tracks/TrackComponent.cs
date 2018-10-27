@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class TrackComponent : SplineComponent {
-    [Range(0.1f, 10.0f)]
+    [Range(0, 40)]
+    public int toRemove = 0;
+
+    [Range(0.01f, 10.0f)]
     public float generatePointEvery = 1.0f;
     [Range(4, 40)]
     public int trackCircularSubDivide = 10;
@@ -47,6 +50,7 @@ public class TrackComponent : SplineComponent {
         
         if (points.Count > 0 && delta > Mathf.Epsilon) {
             var time  = 0f;
+            var timeForward = 0f;
             var index = 0;
 
             List<int> ib = new List<int>(count * 6);
@@ -56,17 +60,20 @@ public class TrackComponent : SplineComponent {
             float deltaAngle = (Mathf.PI * 2) / (float) trackCircularSubDivide;
 
             float v = 0;
-            //bool continueToGenerate = true;
+            bool continueToGenerate = true;
             Quaternion previousRotation = Quaternion.LookRotation(GetForward(time), Vector3.up);
             do
             {
-                time += delta;
 
-                //if (time + delta >= 1)
-                //{
-                //    time = 1;
-                //    continueToGenerate = false;
-                //}
+                if (time >= 1)
+                {
+                    time = 0;
+                    continueToGenerate = false;
+                }
+                else
+                {
+                    timeForward = time;
+                }
 
                 var current = GetPoint(time);
 
@@ -75,7 +82,7 @@ public class TrackComponent : SplineComponent {
                 //var direction = GetForward(time);
                 //var right = Vector3.Cross(up, direction);
 
-                var rotation = Quaternion.LookRotation(GetForward(time), Vector3.up);
+                var rotation = Quaternion.LookRotation(GetForward(timeForward), Vector3.up);
                 // When the angle of the rotation compared to the last segment is too high
                 // smooth the rotation a little bit. Optimally we would smooth the entire sections array.
                 if (Quaternion.Angle(previousRotation, rotation) > 20)
@@ -98,8 +105,8 @@ public class TrackComponent : SplineComponent {
                     vb.Add(current + (right * Mathf.Cos(angle) * trackRadius + up * Mathf.Sin(angle) * trackRadius));
 
                     uvb.Add(new Vector2(u, v));
-                    //if (continueToGenerate)
-                    //{
+                    if (continueToGenerate)
+                    {
                         int b = (i + 1) % trackCircularSubDivide;
 
                         var i1 = (index + i);
@@ -108,13 +115,13 @@ public class TrackComponent : SplineComponent {
                         var i4 = (i3 + trackCircularSubDivide) % count;
 
                         ib.Add(i1);
-                        ib.Add(i2);
                         ib.Add(i3);
+                        ib.Add(i2);
 
                         ib.Add(i2);
-                        ib.Add(i4);
                         ib.Add(i3);
-                    //}
+                        ib.Add(i4);
+                    }
 
 
                     u += uDeltaRepeat;
@@ -122,8 +129,15 @@ public class TrackComponent : SplineComponent {
                 index += trackCircularSubDivide;
                 // TODO : need to generate a new mesh in case we reach max indices.
                 v += vDeltaRepeat;
-            } while (time + delta < 1);
-
+                time += delta;
+            } while (continueToGenerate);
+            //} while (time + delta < 1) ;
+            var toRemoveCount = (trackCircularSubDivide * 6) * toRemove;
+            if (toRemoveCount > 0)
+            {
+                ib.RemoveRange(ib.Count - toRemoveCount, toRemoveCount);
+                ib.RemoveRange(0, toRemoveCount);
+            }
             mesh.vertices = vb.ToArray();
             mesh.triangles = ib.ToArray();
             mesh.uv = uvb.ToArray();

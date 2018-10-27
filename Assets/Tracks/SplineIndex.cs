@@ -50,7 +50,7 @@ public class SplineIndex
 
     public Vector3 GetPoint(float t)
     {
-        var sections = linearPoints.Length - (spline.closed ? 0 : 3);
+        var sections = linearPoints.Length;
         var i = Mathf.Min(Mathf.FloorToInt(t * (float)sections), sections - 1);
         var count = linearPoints.Length;
         if (i < 0) i += count;

@@ -14,12 +14,7 @@ public interface ISpline
     Vector3 GetPoint(float t);
 
 
-    Vector3 GetLeft(float t);
-    Vector3 GetRight(float t);
-    Vector3 GetUp(float t);
-    Vector3 GetDown(float t);
     Vector3 GetForward(float t);
-    Vector3 GetBackward(float t);
 
 
     float GetLength(float stepSize);

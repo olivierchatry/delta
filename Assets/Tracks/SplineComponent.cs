@@ -16,8 +16,7 @@ public class SplineComponent : MonoBehaviour, ISpline {
                 u + 2f * b
             )
         );
-    }
-    public bool closed = false;
+    }    
     public List<Vector3> points = new List<Vector3>();
     public float? length;
     public int ControlPointCount => points.Count;
@@ -34,11 +33,11 @@ public class SplineComponent : MonoBehaviour, ISpline {
             case 0:
                 return Vector3.zero;
             case 1:
-                return transform.TransformPoint(points[0]);
+                return points[0];
             case 2:
-                return transform.TransformPoint(Vector3.Lerp(points[0], points[1], t));
+                return Vector3.Lerp(points[0], points[1], t);
             case 3:
-                return transform.TransformPoint(points[1]);
+                return points[1];
             default:
                 return Hermite(t);
         }
@@ -75,14 +74,14 @@ public class SplineComponent : MonoBehaviour, ISpline {
 
     Vector3 Hermite(float t)
     {
-        var count = points.Count - (closed ? 0 : 3);
+        var count = points.Count;
         var i = Mathf.Min(Mathf.FloorToInt(t * (float)count), count - 1);
         var u = t * (float)count - (float)i;
         var a = GetPointByIndex(i);
         var b = GetPointByIndex(i + 1);
         var c = GetPointByIndex(i + 2);
         var d = GetPointByIndex(i + 3);
-        return transform.TransformPoint(Interpolate(a, b, c, d, u));
+        return Interpolate(a, b, c, d, u);
     }
 
     Vector3 GetPointByIndex(int i)
@@ -107,39 +106,14 @@ public class SplineComponent : MonoBehaviour, ISpline {
     }
 
     public Vector3 GetPoint(float t) => Index.GetPoint(t);
-    public Vector3 GetRight(float t)
-    {
-        var A = GetPoint(t - 0.001f);
-        var B = GetPoint(t + 0.001f);
-        var delta = (B - A);
-        return new Vector3(-delta.z, 0, delta.x).normalized;
-    }
 
 
     public Vector3 GetForward(float t)
     {
-        var A = GetPoint(t - 0.001f);
+        var A = GetPoint(t);
         var B = GetPoint(t + 0.001f);
         return (B - A).normalized;
     }
-
-
-    public Vector3 GetUp(float t)
-    {
-        var A = GetPoint(t - 0.001f);
-        var B = GetPoint(t + 0.001f);
-        var delta = (B - A).normalized;
-        return Vector3.Cross(delta, GetRight(t));
-    }
-
-
-    public Vector3 GetLeft(float t) => -GetRight(t);
-
-
-    public Vector3 GetDown(float t) => -GetUp(t);
-
-
-    public Vector3 GetBackward(float t) => -GetForward(t);
 
     public float GetLength(float step = 0.001f)
     {

@@ -33,10 +33,7 @@ public class TrackComponentEditor : Editor
         var points = serializedObject.FindProperty("points");
         if (Event.current.shift)
         {
-            if (spline.closed)
-                ShowClosestPointOnClosedSpline(points);
-            else
-                ShowClosestPointOnOpenSpline(points);
+            ShowClosestPointOnClosedSpline(points);
         }
         for (int i = 0; i < spline.points.Count; i++)
         {
@@ -54,7 +51,7 @@ public class TrackComponentEditor : Editor
                 }
                 HandleCommands(wp);
             }
-            Handles.color = i == 0 | i == spline.points.Count - 1 ? Color.red : Color.white;
+            Handles.color = Color.red;
             var buttonSize = HandleUtility.GetHandleSize(wp) * 0.1f;
             if (Handles.Button(wp, Quaternion.identity, buttonSize, buttonSize, Handles.SphereHandleCap))
                 hotIndex = i;
@@ -94,16 +91,9 @@ public class TrackComponentEditor : Editor
     public override void OnInspectorGUI()
     {
         EditorGUILayout.HelpBox("Hold Shift and click to append and insert curve points. Backspace to delete points.", MessageType.Info);
-        var spline = target as SplineComponent;
-        serializedObject.Update();
+        var spline = target as SplineComponent;        
 
         GUILayout.BeginHorizontal();
-        var closed = GUILayout.Toggle(spline.closed, "Closed", "button");
-        if (spline.closed != closed)
-        {
-            spline.closed = closed;
-            ResetIndex();
-        }
         if (GUILayout.Button("Flatten Y Axis"))
         {
             Undo.RecordObject(target, "Flatten Y Axis");
@@ -118,48 +108,21 @@ public class TrackComponentEditor : Editor
         }
         GUILayout.EndHorizontal();
         base.OnInspectorGUI();
-        serializedObject.ApplyModifiedProperties();
-
     }
 
-    [DrawGizmo(GizmoType.NonSelected)]
-    static void DrawGizmosLoRes(SplineComponent spline, GizmoType gizmoType)
-    {
-        Gizmos.color = Color.white;
-        DrawGizmo(spline, 64);
-    }
+    //[DrawGizmo(GizmoType.NonSelected)]
+    //static void DrawGizmosLoRes(SplineComponent spline, GizmoType gizmoType)
+    //{
+    //    Gizmos.color = Color.white;
+    //    DrawGizmo(spline, 64);
+    //}
 
-    [DrawGizmo(GizmoType.Selected)]
-    static void DrawGizmosHiRes(SplineComponent spline, GizmoType gizmoType)
-    {
-        Gizmos.color = Color.white;
-        DrawGizmo(spline, 1024);
-    }
-
-    static void DrawGizmo(SplineComponent spline, int stepCount)
-    {
-        if (spline.points.Count > 0)
-        {
-            var P = 0f;
-            var start = spline.GetNonUniformPoint(0);
-            var step = 1f / stepCount;
-            
-            do
-            {
-                P += step;
-                var here = spline.GetNonUniformPoint(P);
-                Gizmos.DrawLine(start, here);
-                Gizmos.color = Color.Lerp(Color.red, Color.green, P);
-                //Gizmos.DrawRay(here, spline.GetLeft(P));
-                //Gizmos.DrawRay(here, spline.GetRight(P));
-                //Gizmos.DrawRay(here, spline.GetUp(P));
-                //Gizmos.DrawRay(here, spline.GetDown(P));
-                //Gizmos.DrawRay(here, spline.GetForward(P));
-                //Gizmos.DrawRay(here, spline.GetBackward(P));
-                start = here;
-            } while (P + step <= 1);
-        }
-    }
+    //[DrawGizmo(GizmoType.Selected)]
+    //static void DrawGizmosHiRes(SplineComponent spline, GizmoType gizmoType)
+    //{
+    //    Gizmos.color = Color.white;
+    //    DrawGizmo(spline, 1024);
+    //}
 
     void ShowClosestPointOnClosedSpline(SerializedProperty points)
     {
@@ -171,76 +134,21 @@ public class TrackComponentEditor : Editor
         {
             var hit = ray.origin + ray.direction * center;
             Handles.DrawWireDisc(hit, spline.transform.up, 5);
-            var p = SearchForClosestPoint(Event.current.mousePosition);
+            var p = SearchForClosestPoint(Event.current.mousePosition);            
             var sp = spline.GetNonUniformPoint(p);
-            Handles.DrawLine(hit, sp);
+            Handles.DrawLine(hit, spline.transform.TransformPoint(sp));
 
 
             if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.shift)
             {
                 var i = (Mathf.FloorToInt(p * spline.points.Count) + 2) % spline.points.Count;
                 points.InsertArrayElementAtIndex(i);
-                points.GetArrayElementAtIndex(i).vector3Value = spline.transform.InverseTransformPoint(sp);
+                points.GetArrayElementAtIndex(i).vector3Value = sp;
                 serializedObject.ApplyModifiedProperties();
                 hotIndex = i;
             }
         }
     }
-
-
-    void ShowClosestPointOnOpenSpline(SerializedProperty points)
-    {
-        var spline = target as SplineComponent;
-        var plane = new Plane(spline.transform.up, spline.transform.position);
-        var ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-        float center;
-        if (plane.Raycast(ray, out center))
-        {
-            var hit = ray.origin + ray.direction * center;
-            var discSize = HandleUtility.GetHandleSize(hit);
-            Handles.DrawWireDisc(hit, spline.transform.up, discSize);
-            var p = SearchForClosestPoint(Event.current.mousePosition);
-
-
-            if ((hit - spline.GetNonUniformPoint(0)).sqrMagnitude < 25) p = 0;
-            if ((hit - spline.GetNonUniformPoint(1)).sqrMagnitude < 25) p = 1;
-
-
-            var sp = spline.GetNonUniformPoint(p);
-
-
-            var extend = Mathf.Approximately(p, 0) || Mathf.Approximately(p, 1);
-
-
-            Handles.color = extend ? Color.red : Color.white;
-            Handles.DrawLine(hit, sp);
-            Handles.color = Color.white;
-
-
-            var i = 1 + Mathf.FloorToInt(p * (spline.points.Count - 3));
-
-
-            if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.shift)
-            {
-                if (extend)
-                {
-                    if (i == spline.points.Count - 2) i++;
-                    points.InsertArrayElementAtIndex(i);
-                    points.GetArrayElementAtIndex(i).vector3Value = spline.transform.InverseTransformPoint(hit);
-                    hotIndex = i;
-                }
-                else
-                {
-                    i++;
-                    points.InsertArrayElementAtIndex(i);
-                    points.GetArrayElementAtIndex(i).vector3Value = spline.transform.InverseTransformPoint(sp);
-                    hotIndex = i;
-                }
-                serializedObject.ApplyModifiedProperties();
-            }
-        }
-    }
-
 
     float SearchForClosestPoint(Vector2 screenPoint, float A = 0f, float B = 1f, float steps = 1000)
     {
