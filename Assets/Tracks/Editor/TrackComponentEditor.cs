@@ -9,9 +9,16 @@ public class TrackComponentEditor : Editor
     int hotIndex = -1;
     int removeIndex = -1;
 
+    void ResetIndex()
+    {
+        var spline = target as TrackComponent;
+        spline.ResetIndex();
+        spline.Generate();
+    }
+
     void OnSceneGUI()
     {
-        var spline = target as SplineComponent;
+        var spline = target as TrackComponent;
 
 
         var e = Event.current;
@@ -43,7 +50,7 @@ public class TrackComponentEditor : Editor
                 if (delta.sqrMagnitude > 0)
                 {
                     prop.vector3Value = point + delta;
-                    spline.ResetIndex();
+                    ResetIndex();
                 }
                 HandleCommands(wp);
             }
@@ -58,7 +65,7 @@ public class TrackComponentEditor : Editor
         if (removeIndex >= 0 && points.arraySize > 4)
         {
             points.DeleteArrayElementAtIndex(removeIndex);
-            spline.ResetIndex();
+            ResetIndex();
         }
         removeIndex = -1;
         serializedObject.ApplyModifiedProperties();
@@ -88,27 +95,31 @@ public class TrackComponentEditor : Editor
     {
         EditorGUILayout.HelpBox("Hold Shift and click to append and insert curve points. Backspace to delete points.", MessageType.Info);
         var spline = target as SplineComponent;
+        serializedObject.Update();
+
         GUILayout.BeginHorizontal();
         var closed = GUILayout.Toggle(spline.closed, "Closed", "button");
         if (spline.closed != closed)
         {
             spline.closed = closed;
-            spline.ResetIndex();
+            ResetIndex();
         }
         if (GUILayout.Button("Flatten Y Axis"))
         {
             Undo.RecordObject(target, "Flatten Y Axis");
             Flatten(spline.points);
-            spline.ResetIndex();
+            ResetIndex();
         }
         if (GUILayout.Button("Center around Origin"))
         {
             Undo.RecordObject(target, "Center around Origin");
             CenterAroundOrigin(spline.points);
-            spline.ResetIndex();
+            ResetIndex();
         }
         GUILayout.EndHorizontal();
         base.OnInspectorGUI();
+        serializedObject.ApplyModifiedProperties();
+
     }
 
     [DrawGizmo(GizmoType.NonSelected)]
@@ -132,11 +143,19 @@ public class TrackComponentEditor : Editor
             var P = 0f;
             var start = spline.GetNonUniformPoint(0);
             var step = 1f / stepCount;
+            
             do
             {
                 P += step;
                 var here = spline.GetNonUniformPoint(P);
                 Gizmos.DrawLine(start, here);
+                Gizmos.color = Color.Lerp(Color.red, Color.green, P);
+                //Gizmos.DrawRay(here, spline.GetLeft(P));
+                //Gizmos.DrawRay(here, spline.GetRight(P));
+                //Gizmos.DrawRay(here, spline.GetUp(P));
+                //Gizmos.DrawRay(here, spline.GetDown(P));
+                //Gizmos.DrawRay(here, spline.GetForward(P));
+                //Gizmos.DrawRay(here, spline.GetBackward(P));
                 start = here;
             } while (P + step <= 1);
         }

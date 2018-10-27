@@ -31,7 +31,7 @@ public class TrackComponent : SplineComponent {
         Generate();
     }
 
-    void Generate()
+    public void Generate()
     {
         var mf   = GetComponent< MeshFilter > ();
         var mesh = new Mesh();
@@ -44,6 +44,7 @@ public class TrackComponent : SplineComponent {
 
         int   count  = Mathf.FloorToInt(sliceCount) * trackCircularSubDivide;
 
+        
         if (points.Count > 0 && delta > Mathf.Epsilon) {
             var time  = 0f;
             var index = 0;
@@ -55,13 +56,36 @@ public class TrackComponent : SplineComponent {
             float deltaAngle = (Mathf.PI * 2) / (float) trackCircularSubDivide;
 
             float v = 0;
+            //bool continueToGenerate = true;
+            Quaternion previousRotation = Quaternion.LookRotation(GetForward(time), Vector3.up);
             do
             {
                 time += delta;
-                var current = GetNonUniformPoint(time);
-                var right = GetLeft(time);
-                var up = GetUp(time);
 
+                //if (time + delta >= 1)
+                //{
+                //    time = 1;
+                //    continueToGenerate = false;
+                //}
+
+                var current = GetPoint(time);
+
+
+                //var up = GetUp(time);
+                //var direction = GetForward(time);
+                //var right = Vector3.Cross(up, direction);
+
+                var rotation = Quaternion.LookRotation(GetForward(time), Vector3.up);
+                // When the angle of the rotation compared to the last segment is too high
+                // smooth the rotation a little bit. Optimally we would smooth the entire sections array.
+                if (Quaternion.Angle(previousRotation, rotation) > 20)
+                {
+                    rotation = Quaternion.Slerp(previousRotation, rotation, 0.5f);
+                }                    
+                previousRotation = rotation;
+                var matrix = Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one);
+                Vector3 right = matrix.GetColumn(0);
+                Vector3 up = matrix.GetColumn(1);
 
                 float uDeltaRepeat = trackCircularTextureRepeat / (float) trackCircularSubDivide;
                 float vDeltaRepeat = trackLinearTextureRepeat / (float) generatePointEvery;
@@ -70,25 +94,27 @@ public class TrackComponent : SplineComponent {
                 for (var i = 0; i < trackCircularSubDivide; ++i)
                 {
                     var angle = deltaAngle * i;
-
-                    vb.Add(current + right * Mathf.Cos(angle) * trackRadius + up * Mathf.Sin(angle) * trackRadius);
+                    
+                    vb.Add(current + (right * Mathf.Cos(angle) * trackRadius + up * Mathf.Sin(angle) * trackRadius));
 
                     uvb.Add(new Vector2(u, v));
+                    //if (continueToGenerate)
+                    //{
+                        int b = (i + 1) % trackCircularSubDivide;
 
-                    int b = (i + 1) % trackCircularSubDivide;
-                    
-                    var i1 = (index + i);
-                    var i2 = (i1 + trackCircularSubDivide) % count;
-                    var i3 = (index + b);
-                    var i4 = (i3 + trackCircularSubDivide) % count;
+                        var i1 = (index + i);
+                        var i2 = (i1 + trackCircularSubDivide) % count;
+                        var i3 = (index + b);
+                        var i4 = (i3 + trackCircularSubDivide) % count;
 
-                    ib.Add(i1);
-                    ib.Add(i2);
-                    ib.Add(i3);
+                        ib.Add(i1);
+                        ib.Add(i2);
+                        ib.Add(i3);
 
-                    ib.Add(i2);
-                    ib.Add(i4);
-                    ib.Add(i3);
+                        ib.Add(i2);
+                        ib.Add(i4);
+                        ib.Add(i3);
+                    //}
 
 
                     u += uDeltaRepeat;
@@ -96,7 +122,7 @@ public class TrackComponent : SplineComponent {
                 index += trackCircularSubDivide;
                 // TODO : need to generate a new mesh in case we reach max indices.
                 v += vDeltaRepeat;
-            } while (time + delta <= 1);
+            } while (time + delta < 1);
 
             mesh.vertices = vb.ToArray();
             mesh.triangles = ib.ToArray();
