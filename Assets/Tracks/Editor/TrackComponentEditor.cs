@@ -66,6 +66,11 @@ public class TrackComponentEditor : Editor
         }
         removeIndex = -1;
         serializedObject.ApplyModifiedProperties();
+
+        // RaycastHit hit;
+        //if (!Physics.Raycast(new Ray(start, up), out hit))
+        //    return;
+
     }
 
     void HandleCommands(Vector3 wp)
@@ -117,12 +122,21 @@ public class TrackComponentEditor : Editor
     //    DrawGizmo(spline, 64);
     //}
 
-    //[DrawGizmo(GizmoType.Selected)]
-    //static void DrawGizmosHiRes(SplineComponent spline, GizmoType gizmoType)
-    //{
-    //    Gizmos.color = Color.white;
-    //    DrawGizmo(spline, 1024);
-    //}
+    [DrawGizmo(GizmoType.Selected)]
+    static void DrawGizmosHiRes(SplineComponent spline, GizmoType gizmoType)
+    {        
+        var start =  spline.transform.TransformPoint(spline.GetPoint(0));
+        var forward = spline.GetForward(0);
+        var rotation = Quaternion.LookRotation(forward, Vector3.up);
+        var matrix = Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one);
+        Vector3 up = matrix.GetColumn(1);
+        var position = start + up * 100;
+
+        Gizmos.DrawRay(start, up);
+
+        //Gizmos.color = Color.white;
+        //DrawGizmo(spline, 1024);
+    }
 
     void ShowClosestPointOnClosedSpline(SerializedProperty points)
     {
