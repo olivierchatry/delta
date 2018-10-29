@@ -122,20 +122,20 @@ public class TrackComponentEditor : Editor
     //}
 
     [DrawGizmo(GizmoType.Selected)]
-    static void DrawGizmosHiRes(SplineComponent spline, GizmoType gizmoType)
-    {        
-        var start =  spline.transform.TransformPoint(spline.GetPoint(0));
-        var forward = spline.GetForward(0);
-        var rotation = Quaternion.LookRotation(forward, Vector3.up);
-        var matrix = Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one);
-        Vector3 up = matrix.GetColumn(1);
-        var position = start + up * 100;
+    //static void DrawGizmosHiRes(SplineComponent spline, GizmoType gizmoType)
+    //{        
+    //    var start =  spline.transform.TransformPoint(spline.GetPoint(0));
+    //    var forward = spline.GetForward(0);
+    //    var rotation = Quaternion.LookRotation(forward, Vector3.up);
+    //    var matrix = Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one);
+    //    Vector3 up = matrix.GetColumn(1);
+    //    // var position = start + up * 100;
 
-        Gizmos.DrawRay(start, up);
+    //    Gizmos.DrawRay(start, up);
 
-        //Gizmos.color = Color.white;
-        //DrawGizmo(spline, 1024);
-    }
+    //    //Gizmos.color = Color.white;
+    //    //DrawGizmo(spline, 1024);
+    //}
 
     void ShowClosestPointOnClosedSpline(SerializedProperty points)
     {

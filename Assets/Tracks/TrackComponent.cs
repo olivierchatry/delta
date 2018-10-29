@@ -19,27 +19,32 @@ public class TrackComponent : SplineComponent {
     public float trackCircularTextureRepeat = 5.0f;
     
     void Update()
-    {
-       
+    {       
     }
 
     void Start()
     {
         Generate();
+
+        var mesh = new Mesh();
+        var meshFilter= GetComponent<MeshFilter>();
+        var meshCollider = GetComponent<MeshCollider>();
+        mesh.MarkDynamic();
+        meshCollider.sharedMesh = mesh;
+        meshFilter.sharedMesh = mesh;
     }
 
     void OnValidate()
     {
         if (uniformIndex != null) uniformIndex.ReIndex();
-        StartCoroutine(GenerateCoRoutine());
+        StartCoroutine(CoGenerate());
     }
 
-    public IEnumerator GenerateCoRoutine()
-    {        
-        Generate();
+    IEnumerator CoGenerate()
+    {
         yield return null;
+        Generate();
     }
-
     public void Generate()
     {
         float length      = GetLength();
@@ -81,25 +86,20 @@ public class TrackComponent : SplineComponent {
                     vertices.Add(current + (right * Mathf.Cos(angle) * trackRadius + up * Mathf.Sin(angle) * trackRadius));
 
                     uvs.Add(new Vector2(u, v));
-                    //if (continueToGenerate)
-                    {
-                        int b = (i + 1) % trackCircularSubDivide;
+                    int b = (i + 1) % trackCircularSubDivide;
 
-                        var i1 = (index + i);
-                        var i2 = (i1 + trackCircularSubDivide) % count;
-                        var i3 = (index + b);
-                        var i4 = (i3 + trackCircularSubDivide) % count;
+                    var i1 = (index + i);
+                    var i2 = (i1 + trackCircularSubDivide) % count;
+                    var i3 = (index + b);
+                    var i4 = (i3 + trackCircularSubDivide) % count;
+                        
+                    triangles.Add(i1);
+                    triangles.Add(i3);
+                    triangles.Add(i2);
 
-                        var j = i * 6;
-                        triangles.Add(i1);
-                        triangles.Add(i3);
-                        triangles.Add(i2);
-
-                        triangles.Add(i2);
-                        triangles.Add(i3);
-                        triangles.Add(i4);
-                    }
-
+                    triangles.Add(i2);
+                    triangles.Add(i3);
+                    triangles.Add(i4);
 
                     u += uDeltaRepeat;
                 }
@@ -113,15 +113,25 @@ public class TrackComponent : SplineComponent {
                 triangles.RemoveRange(triangles.Count - toRemoveCount, toRemoveCount);
                 triangles.RemoveRange(0, toRemoveCount);
             }
-            var mf = GetComponent<MeshFilter>();
-            var mesh = new Mesh();
+            var meshFilter = GetComponent<MeshFilter>();
+            var mesh = meshFilter.sharedMesh;
 
-            mf.mesh = mesh;
+            mesh.Clear();
             mesh.vertices = vertices.ToArray();
             mesh.triangles = triangles.ToArray();
             mesh.uv = uvs.ToArray();
             mesh.RecalculateNormals();
-        }
+            mesh.RecalculateBounds();
 
+            var meshCollider = GetComponent<MeshCollider>();
+            meshCollider.sharedMesh = null;
+            meshCollider.sharedMesh = mesh;
+
+            gameObject.SetActive(false);
+            gameObject.SetActive(true);
+
+
+
+        }
     }
 }
